@@ -1,0 +1,3 @@
+[submodule "GrowlTunesPlugin/external/SGHotKeysLib"]
+	path = GrowlTunesPlugin/external/SGHotKeysLib
+	url = git://github.com/secondgear/SGHotKeysLib.git
