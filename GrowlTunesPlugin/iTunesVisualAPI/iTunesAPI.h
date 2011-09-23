@@ -3,7 +3,7 @@
 //
 // Abstract:   part of iTunes Visual SDK
 //
-// Version:    1.2
+// Version:    2.0
 //
 // Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple Inc. ( "Apple" )
 //             in consideration of your agreement to the following terms, and your use,
@@ -42,7 +42,7 @@
 //             UNDER THEORY OF CONTRACT, TORT ( INCLUDING NEGLIGENCE ), STRICT LIABILITY OR
 //             OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Copyright ( C ) 2000-2007 Apple Inc. All Rights Reserved.
+// Copyright © 2000-2011 Apple Inc. All Rights Reserved.
 //
 #ifndef ITUNESAPI_H_
 #define ITUNESAPI_H_
@@ -63,6 +63,8 @@
 #if TARGET_OS_MAC
 	#include <Carbon/Carbon.h>
 	#include <CoreAudio/CoreAudioTypes.h>
+	#include <CoreFoundation/CoreFoundation.h>
+	#include <CoreServices/CoreServices.h>
 #endif
 #if TARGET_OS_WIN32
 	#include <windows.h>
@@ -84,10 +86,6 @@ typedef const UInt8 *	ConstStringPtr;
 typedef UInt32			OSType;
 
 typedef SInt32			OSStatus;
-
-typedef UInt16			EventKind;
-
-typedef UInt16          EventModifiers;
 
 typedef UInt16			UniChar;
 
@@ -123,15 +121,6 @@ struct Rect {
 	short			right;
 };
 typedef struct Rect Rect;
-
-struct EventRecord {
-	EventKind		what;
-	UInt32			message;
-	UInt32			when;
-	Point			where;
-	EventModifiers	modifiers;
-};
-typedef struct EventRecord EventRecord;
 
 typedef UInt8			Boolean;
 
@@ -211,11 +200,16 @@ typedef struct AudioStreamBasicDescription AudioStreamBasicDescription;
 #endif
 
 #if TARGET_OS_WIN32
-#define GRAPHICS_DEVICE				HWND
-#define	GRAPHICS_DEVICE_NAME		window
+#define VISUAL_PLATFORM_VIEW		HWND
+#define	VISUAL_PLATFORM_DATA		LPCVOID
 #else
-#define GRAPHICS_DEVICE				CGrafPtr
-#define	GRAPHICS_DEVICE_NAME		port
+#ifdef __OBJC__
+	@class NSView;
+#else
+	struct NSView;
+#endif
+#define VISUAL_PLATFORM_VIEW		NSView*
+#define	VISUAL_PLATFORM_DATA		CFDataRef
 #endif
 
 #ifdef __cplusplus
@@ -237,12 +231,9 @@ enum {
 };
 
 enum {
-	kTrackSupportsID3Tags		= (1L << 0),
-	kTrackHasVariableBitRate	= (1L << 1),
-	kTrackIsLocked				= (1L << 3),		/* Device tracks only. Track cannot be deleted or renamed */
-	kTrackCanBeDownloaded		= (1L << 4),		/* Device tracks only. Track can be copied from device to desktop. */
-	kTrackIsHidden				= (1L << 5),		/* Device tracks only. Track should not be displayed in the device window. */
-	kTrackHasVideo				= (1L << 6)			/* Track has video track which can be played in iTunes */
+	kTrackSupportsID3Tags			= (1u << 0),
+	kTrackHasVariableBitRate		= (1u << 1),
+	kTrackHasVideo					= (1u << 6)			/* Track has video track which can be played in iTunes */
 };
 typedef OptionBits	ITTrackAttributes;
 
@@ -251,39 +242,39 @@ enum {
 		These mask values are specified in ITTrackInfo.validFields
 		to indicate which fields contain valid data
 	*/
-
+	
 	kITTIFieldInvalid				= 0,
-	kITTINameFieldMask				= (1L << 0),
-	kITTIFileNameFieldMask			= (1L << 1),
-	kITTIArtistFieldMask			= (1L << 2),
-	kITTIAlbumFieldMask				= (1L << 3),
-	kITTIGenreFieldMask				= (1L << 4),
-	kITTIKindFieldMask				= (1L << 5),
-	kITTITrackNumberFieldsMask		= (1L << 6),
-	kITTIYearFieldMask				= (1L << 7),
-	kITTISoundVolumeFieldMask		= (1L << 8),
-	kITTIEQPresetFieldMask			= (1L << 9),
-	kITTICommentsFieldMask			= (1L << 10),
-	kITTITotalTimeFieldMask			= (1L << 11),
-	kITTIStartTimeFieldMask			= (1L << 12),
-	kITTIStopTimeFieldMask			= (1L << 13),
-	kITTISizeFieldMask				= (1L << 14),
-	kITTIBitRateFieldMask			= (1L << 15),
-	kITTISampleRateFieldMask		= (1L << 16),
-	kITTIAttributesFieldMask		= (1L << 17),
-	kITTIFileTypeFieldMask			= (1L << 18),
-	kITTIDateFieldMask				= (1L << 19),
-	kITTIFileCreatorFieldMask		= (1L << 20),
-	kITTIComposerFieldMask			= (1L << 21),	/* Added in iTunes 3.0 */
-	kITTICompilationFieldMask		= (1L << 22),	/* Added in iTunes 3.0 */
-	kITTIDiscNumberFieldsMask		= (1L << 23),	/* Added in iTunes 3.0 */
-	kITTITrackRatingFieldMask		= (1L << 24),	/* Added in iTunes 3.0 - used to be called kITTIUserRatingFieldMask */
-	kITTIPlayCountFieldMask 		= (1L << 25),	/* Added in iTunes 3.0 */
-	kITTILastPlayDateFieldMask		= (1L << 26),	/* Added in iTunes 3.0 */
-	kITTIBeatsPerMinuteFieldMask	= (1L << 27),	/* Added in iTunes 4.0 */
-	kITTIGroupingFieldMask			= (1L << 28),	/* Added in iTunes 4.2 */
-	kITTIGaplessAlbumFieldMask		= (1L << 29),	/* Added in iTunes 7.0 */
-	kITTIAlbumArtistFieldMask		= (1L << 30)	/* Added in iTunes 7.0 */
+	kITTINameFieldMask				= (1u << 0),
+	kITTIFileNameFieldMask			= (1u << 1),
+	kITTIArtistFieldMask			= (1u << 2),
+	kITTIAlbumFieldMask				= (1u << 3),
+	kITTIGenreFieldMask				= (1u << 4),
+	kITTIKindFieldMask				= (1u << 5),
+	kITTITrackNumberFieldsMask		= (1u << 6),
+	kITTIYearFieldMask				= (1u << 7),
+	kITTISoundVolumeFieldMask		= (1u << 8),
+	kITTIEQPresetFieldMask			= (1u << 9),
+	kITTICommentsFieldMask			= (1u << 10),
+	kITTITotalTimeFieldMask			= (1u << 11),			
+	kITTIStartTimeFieldMask			= (1u << 12),
+	kITTIStopTimeFieldMask			= (1u << 13),
+	kITTISizeFieldMask				= (1u << 14),
+	kITTIBitRateFieldMask			= (1u << 15),
+	kITTISampleRateFieldMask		= (1u << 16),
+	kITTIAttributesFieldMask		= (1u << 17),
+	kITTIFileTypeFieldMask			= (1u << 18),
+	kITTIDateFieldMask				= (1u << 19),
+//	kITTIFileCreatorFieldMask		= (1u << 20),	/* Removed in iTunes 9.0.2 */
+	kITTIComposerFieldMask			= (1u << 21),	/* Added in iTunes 3.0 */
+	kITTICompilationFieldMask		= (1u << 22),	/* Added in iTunes 3.0 */
+	kITTIDiscNumberFieldsMask		= (1u << 23),	/* Added in iTunes 3.0 */
+	kITTITrackRatingFieldMask		= (1u << 24),	/* Added in iTunes 3.0 - used to be called kITTIUserRatingFieldMask */
+	kITTIPlayCountFieldMask 		= (1u << 25),	/* Added in iTunes 3.0 */
+	kITTILastPlayDateFieldMask		= (1u << 26),	/* Added in iTunes 3.0 */
+	kITTIBeatsPerMinuteFieldMask	= (1u << 27),	/* Added in iTunes 4.0 */
+	kITTIGroupingFieldMask			= (1u << 28),	/* Added in iTunes 4.2 */
+	kITTIGaplessAlbumFieldMask		= (1u << 29),	/* Added in iTunes 7.0 */
+	kITTIAlbumArtistFieldMask		= (1u << 30)	/* Added in iTunes 7.0 */
 };
 typedef OptionBits	ITTIFieldMask;
 
@@ -306,10 +297,10 @@ typedef const UniChar *	ConstITUniStringPtr;
 #if TARGET_OS_MAC
 	typedef FSRef	ITFileSpec;
 #endif
-	
+
 #if TARGET_OS_WIN32
-#define	kITFileSpecMaxPathLength	(MAX_PATH - 1)
-	
+	#define	kITFileSpecMaxPathLength	(MAX_PATH - 1)
+
 	typedef struct ITFileSpec
 	{
 		UInt16	length;		// Length in characters
@@ -320,8 +311,8 @@ typedef const UniChar *	ConstITUniStringPtr;
 struct ITTrackInfo {
 	ITTIFieldMask		validFields;
 	UInt32				recordLength;					/* Size of this structure in bytes */
-
-	ITUniStr255			name;
+	
+	ITUniStr255			name;	
 	ITUniStr255			fileName;
 	ITUniStr255			artist;
 	ITUniStr255			album;
@@ -329,13 +320,13 @@ struct ITTrackInfo {
 	ITUniStr255			kind;
 	ITUniStr255			eqPresetName;
 	ITUniStr255			comments;
-
+	
 	UInt32				trackNumber;
 	UInt32				numTracks;
-
+		
 	UInt16				year;
 	SInt16				soundVolumeAdjustment;			/* Valid range is -255 to +255 */
-
+		
 	UInt32				totalTimeInMS;
 	UInt32				startTimeInMS;
 	UInt32				stopTimeInMS;
@@ -347,98 +338,101 @@ struct ITTrackInfo {
 	UInt32				oldSampleRateFixed;				/* Deprecated in iTunes 5.0 */
 
 	OSType				fileType;
-	OSType				fileCreator;
-
+	OSType				obsoleteFileCreator;			/* Removed in iTunes 9.0.2 */
+	
 	ITTrackAttributes	attributes;
 	ITTrackAttributes	validAttributes;				/* Mask indicating which attributes are applicable */
 
 	ITUniStr255			composer;						/* Added in iTunes 3.0 */
-
+	
 	Boolean				isCompilationTrack;				/* Added in iTunes 3.0 */
 	Boolean				partOfGaplessAlbum;				/* Added in iTunes 7.0 (was reserved) */
-
-	UInt16				trackRating;					/* Added in iTunes 3.0. 0 = unrated, valid values are 20, 40, 60, 80 and 100. Used to be called userRating */
+	
+	UInt16				trackRating;						/* Added in iTunes 3.0. 0 = unrated, valid values are 20, 40, 60, 80 and 100. Used to be called userRating */
 
 	UInt16				discNumber;						/* Added in iTunes 3.0 */
 	UInt16				numDiscs;						/* Added in iTunes 3.0 */
-
+	
 	UInt32				playCount;						/* Added in iTunes 3.0 */
 	UInt32				lastPlayDate;					/* Added in iTunes 3.0 */
-
+	
 	UInt16				beatsPerMinute;					/* Added in iTunes 4.0 */
-	UInt16				reserved;						/* Reserved. Must be zero. */
+	UInt16				reserved;						/* Reserved. Must be zero. */		
 
 	ITUniStr255			grouping;						/* Added in iTunes 4.0 */
 	
 	float				sampleRateFloat;				/* Added in iTunes 5.0 */
-	
+
 	ITUniStr255			albumArtist;					/* Added in iTunes 7.0 */
 	
 	UInt64				sizeInBytes;					/* Added in iTunes 7.1 */
 };
 typedef struct ITTrackInfo ITTrackInfo;
 
+enum
+{
+	kStreamInfoOption_OverrideAll		= 0x00000001
+};
+
 struct ITStreamInfo {
 	SInt32				version;
 	ITUniStr255			streamTitle;
 	ITUniStr255			streamURL;
 	ITUniStr255			streamMessage;
+	
+	OptionBits			options;			// added in iTunes 10.3 - add at the end of struct to maintain compatibility
+	ITUniStr255			streamName;			// added in iTunes 10.3 - add at the end of struct to maintain compatibility
 };
 typedef struct ITStreamInfo ITStreamInfo;
 
 enum {
 	/* messages sent to plugin main */
-
+	
 	kPluginInitMessage					= 'init',
 	kPluginCleanupMessage				= 'clr ',
 	kPluginPrepareToQuitMessage			= 'prqt',
-
+	
 	kPluginIdleMessage					= 'idle'
 };
 
 
 enum {
 	/* PluginInitMessage.options */
-
-	kPluginWantsIdleMessages        = (1L << 1),	/* Send idle messages to plugin main */
-	kPluginWantsToBeLeftOpen        = (1L << 2),	/* Don't close this plugin just because it didn't register anyone */
-	kPluginWantsVolumeMessages	    = (1L << 3),	/* The plugin wants to be notified when volumes are mounted/unmounted/renamed */
-	kPluginWantsDisplayNotification = (1L << 5)		/* The plugin wants to know when the display depth/size changes */
+	
+	kPluginWantsIdleMessages			= (1u << 1),	/* Send idle messages to plugin main */
+	kPluginWantsToBeLeftOpen			= (1u << 2),	/* Don't close this plugin just because it didn't register anyone */
+	kPluginWantsDisplayNotification		= (1u << 5)		/* The plugin wants to know when the display depth/size changes */
 };
 
 
 enum {
 	/* iTunes API messages */
 
-	kPlayerRegisterVisualPluginMessage	= 'rvis',	/* Register a visual plugin */
-
+	kPlayerRegisterVisualPluginMessage	= 'regv',	/* Register a visual plugin */
+	
 	/* Available for all plugins */
 
 	kPlayerUnregisterPluginMessage		= 'unrg',	/* Unregister the plugin this comes from */
 	kPlayerIdleMessage					= 'idle',	/* Give iTunes some time */
-
+	
 	kPlayerShowAboutMessage				= 'abou',	/* Show the about box. */
 	kPlayerOpenURLMessage				= 'url ',	/* Open a URL */
 
 	kPlayerSetPluginDataMessage			= 'sprf',	/* Set plugin preferences */
 	kPlayerGetPluginDataMessage			= 'gprf',	/* Get plugin preferences */
-
+	
 	kPlayerSetPluginNamedDataMessage	= 'snpr',	/* Set plugin named preferenes */
 	kPlayerGetPluginNamedDataMessage	= 'gnpr',	/* Get plugin named preferenes */
-
-	kPlayerGetFileTrackInfoMessage		= 'gfti',	/* Query iTunes for information about a file */
-	kPlayerSetFileTrackInfoMessage		= 'sfti',	/* Ask iTunes to set information about a file */
-
+	
+	kPlayerGetFileTrackInfoMessage		= 'gfti',	/* Query iTunes for information about a file */ 
+	kPlayerSetFileTrackInfoMessage		= 'sfti',	/* Ask iTunes to set information about a file */ 
+	
 	kPlayerGetITTrackInfoSizeMessage	= 'itsz',	/* Query iTunes for the sizeof(ITTrackInfo). This allows newer plugins to correctly workd with older versions of iTunes. */
 
 	kPlayerHandleMacOSEventMessage		= 'evnt',	/* Tell player to handle unhandled event */
-	
-#if TARGET_OS_MAC
-	kPlayerGetPluginFileSpecMessage		= 'pspc',	/* Get the location of the plugin executable (compatibility only) */
-#endif
-	
+
 	kPlayerGetPluginITFileSpecMessage	= 'itfs',	/* Get the location of the plugin executable (iTunes 4.1 or later) */
-	
+
 	kPluginDisplayChangedMessage		= 'disp'	/* Something about some display has changed */
 };
 
@@ -457,7 +451,7 @@ struct PluginInitMessage {
 
 	void *							appCookie;				/* Input */
 	ITAppProcPtr					appProc;				/* Input */
-
+	
 	OptionBits						options;				/* Output, see above for values */
 	void *							refCon;					/* Output */
 };
@@ -466,7 +460,7 @@ typedef struct PluginInitMessage PluginInitMessage;
 
 struct PluginMessageInfo {
 	union {
-		PluginInitMessage				initMessage;
+		PluginInitMessage					initMessage;
 	} u;
 };
 typedef struct PluginMessageInfo PluginMessageInfo;
@@ -477,7 +471,6 @@ typedef OSStatus (*PluginProcPtr)(OSType message, PluginMessageInfo *messageInfo
 /* Visual plugin message handler */
 struct VisualPluginMessageInfo;
 typedef OSStatus (*VisualPluginProcPtr)(OSType message, struct VisualPluginMessageInfo *messageInfo, void *refCon);
-
 
 /*
 	Callbacks to iTunes
@@ -520,20 +513,6 @@ struct PlayerGetPluginNamedDataMessage {
 };
 typedef struct PlayerGetPluginNamedDataMessage PlayerGetPluginNamedDataMessage;
 
-struct PlayerHandleMacOSEventMessage {
-	const EventRecord *				theEvent;		/* Input */
-	
-	Boolean							handled;		/* Output */
-};
-typedef struct PlayerHandleMacOSEventMessage PlayerHandleMacOSEventMessage;
-
-#if TARGET_OS_MAC
-struct PlayerGetPluginFileSpecMessage {
-	FSSpec *						fileSpec;		/* Output */
-};
-typedef struct PlayerGetPluginFileSpecMessage PlayerGetPluginFileSpecMessage;
-#endif
-
 struct PlayerGetPluginITFileSpecMessage {
 	ITFileSpec *					fileSpec;		/* Output */
 };
@@ -561,41 +540,40 @@ typedef struct PlayerGetITTrackInfoSizeMessage PlayerGetITTrackInfoSizeMessage;
 */
 enum {
 	/* PlayerRegisterVisualPluginMessage.options */
-
-	kVisualWantsIdleMessages			= (1L << 3),
-	kVisualWantsConfigure				= (1L << 5),
-	kVisualProvidesUnicodeName			= (1L << 6)				/* Added in iTunes 7.3 */
+	
+	/* Plugin uses 3D exclusively (OpenGL or Direct3D), iTunes does not need to invalidate the backing native view. */
+	kVisualUsesOnly3D					= (1u << 0),
+	/* Plugin supports discrete or integrated graphics without requiring a mode switch. */
+	kVisualSupportsMuxedGraphics		= (1u << 1),
+	/* Mac-only: Plugin adds an NSView-based subview to the one provided, iTunes does not need to invalidate the backing native view.*/
+	kVisualUsesSubview					= (1u << 2),
+	/* Plugin wants periodic idle messages.  Note that these idle messages are not for drawing, only for internal processing. */
+	kVisualWantsIdleMessages			= (1u << 3),
+	/* Plugin supports a configure dialog, iTunes will display an item in the menus to show it. */
+	kVisualWantsConfigure				= (1u << 5)
 };
 
 struct PlayerRegisterVisualPluginMessage {
 	/* Input from plugin */
-
-	Str63							name;						/* Displayed in the Visual menu -- may be empty if options include kVisualProvidesUnicodeName */
+	ITUniStr255						name;						/* Displayed in the Visualizer menu */
 	OptionBits						options;					/* See above */
-
+	
 	OSType							creator;					/* Identifies the plugin */
-
+	
 	NumVersion						pluginVersion;				/* Version number of the plugin */
 
 	VisualPluginProcPtr				handler;					/* Handler for the plugin's messages */
 	void *							registerRefCon;				/* RefCon for the plugin's handler */
 
-	UInt32							timeBetweenDataInMS;		/* How often to call the plugin (0xFFFFFFFF = as often as possible) */
+	UInt32							pulseRateInHz;				/* Send the plugin a "pulse" message N times a second (max ~= 120 but may vary) */
 	UInt32							numWaveformChannels;		/* 0-2 waveforms requested */
 	UInt32							numSpectrumChannels;		/* 0-2 spectrums requested */
-
-	SInt16							minWidth;					/* Minimum resizeable width */
-	SInt16							minHeight;					/* Minimum resizeable height */
-
-	SInt16							maxWidth;					/* Maximum resizeable width */
-	SInt16							maxHeight;					/* Maximum resizeable height */
-
-	UInt16							minFullScreenBitDepth;		/* 0 = Any */
-	UInt16							maxFullScreenBitDepth;		/* 0 = Any */
-
-	UInt16							windowAlignmentInBytes;		/* Reserved (should be zero) */
-
-	ITUniStr255						unicodeName;				/* options must include kVisualProvidesUnicodeName for this to be used -- Added in iTunes 7.3*/
+	
+	SInt32							minWidth;					/* Minimum resizeable width (0 for no restriction) */
+	SInt32							minHeight;					/* Minimum resizeable height (0 for no restriction) */
+	
+	SInt32							maxWidth;					/* Maximum resizeable width (0 for no limit) */
+	SInt32							maxHeight;					/* Maximum resizeable height (0 for no limit) */
 };
 typedef struct PlayerRegisterVisualPluginMessage PlayerRegisterVisualPluginMessage;
 
@@ -604,105 +582,81 @@ struct PlayerSetFullScreenMessage {
 };
 typedef struct PlayerSetFullScreenMessage PlayerSetFullScreenMessage;
 
-struct PlayerSetFullScreenOptionsMessage {
-	SInt16							minBitDepth;				/* 0 = Any */
-	SInt16							maxBitDepth;				/* 0 = Any */
-	SInt16							preferredBitDepth;			/* 0 = Current */
-
-	SInt16							desiredWidth;				/* Must be within minWidth & maxWidth */
-	SInt16							desiredHeight;				/* Must be within minHeight & maxHeight */
-};
-typedef struct PlayerSetFullScreenOptionsMessage PlayerSetFullScreenOptionsMessage;
-
-struct PlayerGetCurrentTrackCoverArtMessage {
-	Handle						coverArt;		/* output - client must dispose */
-	OSType						coverArtFormat;	/* output - format of cover art */
-};
-typedef struct PlayerGetCurrentTrackCoverArtMessage PlayerGetCurrentTrackCoverArtMessage;
-
 
 // iTunes API callback union structure
 struct PlayerMessageInfo {
 	UInt32									messageMajorVersion;		/* Should be kITPluginMajorMessageVersion */
 	UInt32									messageMinorVersion;		/* Should be kITPluginMinorMessageVersion */
 	UInt32									messageInfoSize;			/* Should be sizeof(PlayerMessageInfo) */
-
+	
 	union {
 		PlayerOpenURLMessage				openURLMessage;
-
+		
 		PlayerSetPluginDataMessage			setPluginDataMessage;
 		PlayerGetPluginDataMessage			getPluginDataMessage;
-
+		
 		PlayerSetPluginNamedDataMessage		setPluginNamedDataMessage;
 		PlayerGetPluginNamedDataMessage		getPluginNamedDataMessage;
-
-
+		
+				
 		PlayerGetFileTrackInfoMessage		getFileTrackInfoMessage;
 		PlayerSetFileTrackInfoMessage		setFileTrackInfoMessage;
 		PlayerGetITTrackInfoSizeMessage		getITTrackInfoSizeMessage;
 
-		PlayerHandleMacOSEventMessage		handleMacOSEventMessage;
-		
-#if TARGET_OS_MAC
-		PlayerGetPluginFileSpecMessage		getPluginFileSpecMessage;
-#endif
-		
 		PlayerGetPluginITFileSpecMessage	getPluginITFileSpecMessage;
-		
+
 		// visual APIs
 		PlayerRegisterVisualPluginMessage		registerVisualPluginMessage;
 		PlayerSetFullScreenMessage				setFullScreenMessage;
-		PlayerSetFullScreenOptionsMessage		setFullScreenOptionsMessage;
-		PlayerGetCurrentTrackCoverArtMessage	getCurrentTrackCoverArtMessage;
+
 	} u;
 };
 typedef struct PlayerMessageInfo PlayerMessageInfo;
 
-extern OSStatus ITCallApplication (void *appCookie, ITAppProcPtr appProc, OSType message, PlayerMessageInfo *messageInfo);
-extern void		SetNumVersion (NumVersion *numVersion, UInt8 majorRev, UInt8 minorAndBugRev, UInt8 stage, UInt8 nonRelRev);
+extern OSStatus ITCallApplication(void *appCookie, ITAppProcPtr appProc, OSType message, PlayerMessageInfo *messageInfo);
+extern void		SetNumVersion(NumVersion *numVersion, UInt8 majorRev, UInt8 minorAndBugRev, UInt8 stage, UInt8 nonRelRev);
 
 
 /* For all plugins */
 
-extern OSStatus	PlayerUnregisterPlugin (void *appCookie, ITAppProcPtr appProc, PlayerMessageInfo *messageInfo);
-extern OSStatus PlayerIdle (void *appCookie, ITAppProcPtr appProc);
+extern OSStatus	PlayerUnregisterPlugin(void *appCookie, ITAppProcPtr appProc, PlayerMessageInfo *messageInfo);
+extern OSStatus PlayerIdle(void *appCookie, ITAppProcPtr appProc);
 
-extern void		PlayerShowAbout (void *appCookie, ITAppProcPtr appProc);
-extern void		PlayerOpenURL (void *appCookie, ITAppProcPtr appProc, SInt8 *string, UInt32 length);
+extern void		PlayerShowAbout(void *appCookie, ITAppProcPtr appProc);
+extern void		PlayerOpenURL(void *appCookie, ITAppProcPtr appProc, SInt8 *string, UInt32 length);
 
-extern OSStatus	PlayerGetPluginData (void *appCookie, ITAppProcPtr appProc, void *dataPtr, UInt32 dataBufferSize, UInt32 *dataSize);
-extern OSStatus	PlayerSetPluginData (void *appCookie, ITAppProcPtr appProc, void *dataPtr, UInt32 dataSize);
+extern OSStatus	PlayerGetPluginData(void *appCookie, ITAppProcPtr appProc, void *dataPtr, UInt32 dataBufferSize, UInt32 *dataSize);
+extern OSStatus	PlayerSetPluginData(void *appCookie, ITAppProcPtr appProc, void *dataPtr, UInt32 dataSize);
 
-extern OSStatus	PlayerGetPluginNamedData (void *appCookie, ITAppProcPtr appProc, ConstStringPtr dataName, void *dataPtr, UInt32 dataBufferSize, UInt32 *dataSize);
-extern OSStatus	PlayerSetPluginNamedData (void *appCookie, ITAppProcPtr appProc, ConstStringPtr dataName, void *dataPtr, UInt32 dataSize);
+extern OSStatus	PlayerGetPluginNamedData(void *appCookie, ITAppProcPtr appProc, ConstStringPtr dataName, void *dataPtr, UInt32 dataBufferSize, UInt32 *dataSize);
+extern OSStatus	PlayerSetPluginNamedData(void *appCookie, ITAppProcPtr appProc, ConstStringPtr dataName, void *dataPtr, UInt32 dataSize);
 
-extern OSStatus	PlayerGetFileTrackInfo (void *appCookie, ITAppProcPtr appProc, const ITFileSpec *fileSpec, ITTrackInfo *trackInfo);
-extern OSStatus	PlayerSetFileTrackInfo (void *appCookie, ITAppProcPtr appProc, const ITFileSpec *fileSpec, const ITTrackInfo *trackInfo);
+extern OSStatus	PlayerGetFileTrackInfo(void *appCookie, ITAppProcPtr appProc, const ITFileSpec *fileSpec, ITTrackInfo *trackInfo);
+extern OSStatus	PlayerSetFileTrackInfo(void *appCookie, ITAppProcPtr appProc, const ITFileSpec *fileSpec, const ITTrackInfo *trackInfo);
 
-extern OSStatus PlayerGetITTrackInfoSize (void *appCookie, ITAppProcPtr appProc, UInt32 appPluginMajorVersion, UInt32 appPluginMinorVersion, UInt32 *itTrackInfoSize);
+extern OSStatus PlayerGetITTrackInfoSize(void *appCookie, ITAppProcPtr appProc, UInt32 appPluginMajorVersion, UInt32 appPluginMinorVersion, UInt32 *itTrackInfoSize);
 
-extern OSStatus PlayerHandleMacOSEvent (void *appCookie, ITAppProcPtr appProc, const EventRecord *theEvent, Boolean *eventHandled);
+extern OSStatus	PlayerGetPluginITFileSpec(void *appCookie, ITAppProcPtr appProc, ITFileSpec *pluginFileSpec);
 
-
-#if TARGET_OS_MAC
-extern OSStatus	PlayerGetPluginFileSpec (void *appCookie, ITAppProcPtr appProc, FSSpec *pluginFileSpec);
-#endif
-extern OSStatus	PlayerGetPluginITFileSpec (void *appCookie, ITAppProcPtr appProc, ITFileSpec *pluginFileSpec);
-	
 /* iTunes APIs For visual plugins */
 enum {
-	kPlayerSetFullScreenMessage			= 'sful',	/* Set full screen mode */
-	kPlayerSetFullScreenOptionsMessage	= 'sfop',	/* Set full screen options */
-	kPlayerGetCurrentTrackCoverArtMessage = 'covr'	/* Get current player track cover artwork */
+	kPlayerSetFullScreenMessage			= 'sful',		/* Set full screen mode */
+	kPlayerSetFullScreenOptionsMessage	= 'sfop',		/* Set full screen options */
+
+	/*
+		Request the current player track cover artwork.
+		It will be returned asynchronously via kVisualPluginCoverArtworkMessage.
+	*/
+	kPlayerRequestCurrentTrackCoverArtMessage = 'rart'
+
 };
 
-extern OSStatus PlayerRegisterVisualPlugin (void *appCookie, ITAppProcPtr appProc, PlayerMessageInfo *messageInfo);
+extern OSStatus PlayerRegisterVisualPlugin(void *appCookie, ITAppProcPtr appProc, PlayerMessageInfo *messageInfo);
 
-extern OSStatus PlayerSetFullScreen (void *appCookie, ITAppProcPtr appProc, Boolean fullScreen);
-extern OSStatus PlayerSetFullScreenOptions (void *appCookie, ITAppProcPtr appProc, SInt16 minBitDepth, SInt16 maxBitDepth, SInt16 preferredBitDepth, SInt16 desiredWidth, SInt16 desiredHeight);
-extern OSStatus PlayerGetCurrentTrackCoverArt (void *appCookie, ITAppProcPtr appProc, Handle *coverArt, OSType *coverArtFormat);
+extern OSStatus PlayerSetFullScreen(void *appCookie, ITAppProcPtr appProc, Boolean fullScreen);
+extern OSStatus PlayerSetFullScreenOptions(void *appCookie, ITAppProcPtr appProc, SInt16 minBitDepth, SInt16 maxBitDepth, SInt16 preferredBitDepth, SInt16 desiredWidth, SInt16 desiredHeight);
+extern OSStatus PlayerRequestCurrentTrackCoverArt(void *appCookie, ITAppProcPtr appProc);
 
-	
 #if PRAGMA_STRUCT_ALIGN
     #pragma options align=reset
 #elif PRAGMA_STRUCT_PACKPUSH

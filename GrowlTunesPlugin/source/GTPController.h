@@ -8,9 +8,8 @@
 
 #import <Cocoa/Cocoa.h>
 #import <Growl/GrowlApplicationBridge.h>
-#import <GrowlAbstractSingletonObject.h>
-#import <NSWorkspaceAdditions.h>
 
+#import "GrowlAbstractSingletonObject.h"
 #import "GTPCommon.h"
 #import "GTPSettingsWindowController.h"
 #import "GTPNotification.h"
@@ -19,8 +18,6 @@
 #import "SGHotKeyCenter.h"
 #import "SGKeyCombo.h"
 
-#import "GrowlTunesPlugin.h"
-
 @interface GTPController : GrowlAbstractSingletonObject <GrowlApplicationBridgeDelegate, GTPSettingsProtocol> 
 {
 	NSMutableDictionary *_settings;
@@ -28,10 +25,6 @@
 	GTPNotification		*_notification;
 
 	GTPSettingsWindowController *_settingsWindow;
-
-
-	id <GrowlTunesPluginArchive> archivePlugin;
-	NSMutableArray		*plugins;
 }
 
 - (void)setup;

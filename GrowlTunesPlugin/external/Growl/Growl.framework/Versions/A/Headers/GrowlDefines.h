@@ -149,7 +149,7 @@
  *
  *	 Optional. Not supported by all display plugins.
  */
-#define GROWL_NOTIFICATION_ICON			XSTR("NotificationIcon")
+#define GROWL_NOTIFICATION_ICON_DATA			XSTR("NotificationIconData")
 /*!	@defined GROWL_NOTIFICATION_APP_ICON
  *	@discussion Image data for the application icon, in case GROWL_APP_ICON does
  *	 not apply for some reason. Must be in a format supported by NSImage, such
@@ -157,7 +157,7 @@
  *
  *	 Optional. Not supported by all display plugins.
  */
-#define GROWL_NOTIFICATION_APP_ICON		XSTR("NotificationAppIcon")
+#define GROWL_NOTIFICATION_APP_ICON_DATA		XSTR("NotificationAppIconData")
 /*!	@defined GROWL_NOTIFICATION_PRIORITY
  *	@discussion The priority of the notification as an integer number from
  *	 -2 to +2 (+2 being highest).

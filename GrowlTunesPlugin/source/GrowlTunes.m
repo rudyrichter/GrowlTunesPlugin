@@ -10,6 +10,7 @@
 \**/
 
 #include "iTunesVisualAPI.h"
+#include "iTunesAPI.h"
 #import "GTPController.h"
 
 /**\
@@ -50,11 +51,11 @@ static OSStatus VisualPluginHandler(OSType message, VisualPluginMessageInfo *mes
 	visualPluginData = (VisualPluginData *)refCon;
 
 	
-	/*if (message != 'vrnd') 
+	if (message != 'vrnd') 
 	{
 		char *string = (char *)&message;
 		NSLog(@"%s %c%c%c%c\n", __FUNCTION__, string[0], string[1], string[2], string[3]);
-	}*/
+	}
 	
 
 	err = noErr;
@@ -75,8 +76,8 @@ static OSStatus VisualPluginHandler(OSType message, VisualPluginMessageInfo *mes
 
 			visualPluginData->appCookie	= messageInfo->u.initMessage.appCookie;
 			visualPluginData->appProc	= messageInfo->u.initMessage.appProc;
-
-			messageInfo->u.initMessage.options = kPluginWantsToBeLeftOpen;
+            
+            messageInfo->u.initMessage.unused = kPluginWantsToBeLeftOpen;
 			messageInfo->u.initMessage.refCon = (void *)visualPluginData;
 
 			break;
@@ -117,50 +118,18 @@ static OSStatus VisualPluginHandler(OSType message, VisualPluginMessageInfo *mes
 		}
 
 		/*
-			Sent when iTunes is no longer displayed.
-		*/
-		case kVisualPluginHideWindowMessage:
-			break;
-
-		/*
-			Sent when iTunes needs to change the port or rectangle of the currently
-			displayed visual.
-		*/
-		case kVisualPluginSetWindowMessage:
-			break;
-
-		/*
-			Sent for the visual plugin to render a frame.
-		*/
-		case kVisualPluginRenderMessage:
-			break;
-		/*
-			Sent in response to an update event.  The visual plugin should update
-			into its remembered port.  This will only be sent if the plugin has been
-			previously given a ShowWindow message.
-		*/
-		case kVisualPluginUpdateMessage:
-			break;
-		/*
-			Sent when iTunes is going to show the visual plugin in a port.  At
-			this point,the plugin should allocate any large buffers it needs.
-		*/
-		case kVisualPluginShowWindowMessage:
-			break;
-
-		/*
 			Sent when the player starts.
 		*/
 		case kVisualPluginPlayMessage: 
 		case kVisualPluginChangeTrackMessage:
 		{
 			if (messageInfo->u.playMessage.trackInfo)
-				visualPluginData->trackInfo = *messageInfo->u.playMessage.trackInfoUnicode;
+				visualPluginData->trackInfo = *messageInfo->u.playMessage.trackInfo;
 			else
 				memset(&visualPluginData->trackInfo, 0, sizeof(visualPluginData->trackInfo));
 			
 			if (messageInfo->u.playMessage.streamInfo)
-				visualPluginData->streamInfo = *messageInfo->u.playMessage.streamInfoUnicode;
+				visualPluginData->streamInfo = *messageInfo->u.playMessage.streamInfo;
 			else
 				memset(&visualPluginData->streamInfo, 0, sizeof(visualPluginData->streamInfo));
 
@@ -197,30 +166,6 @@ static OSStatus VisualPluginHandler(OSType message, VisualPluginMessageInfo *mes
 			Sent when the player changes position.
 		*/
 		case kVisualPluginSetPositionMessage:
-			break;
-
-		/*
-			Sent when the player pauses.  iTunes does not currently use pause or unpause.
-			A pause in iTunes is handled by stopping and remembering the position.
-		*/
-		case kVisualPluginPauseMessage:
-			visualPluginData->playing = false;
-			break;
-
-		/*
-			Sent when the player unpauses.  iTunes does not currently use pause or unpause.
-			A pause in iTunes is handled by stopping and remembering the position.
-		*/
-		case kVisualPluginUnpauseMessage:
-			visualPluginData->playing = true;
-			break;
-
-		/*
-			Sent to the plugin in response to a MacOS event.  The plugin should return noErr
-			for any event it handles completely,or an error (unimpErr) if iTunes should handle it.
-		*/
-		case kVisualPluginEventMessage:
-			err = unimpErr;
 			break;
 
 		default:

@@ -7,6 +7,7 @@
 //
 
 #import "GTPController.h"
+#import <Growl/GrowlDefines.h>
 
 @implementation GTPController
 
@@ -55,12 +56,6 @@
 	
 	[[self notification] setTitleFormat:[[self settings] objectForKey:@"titleString"]];
 	[[self notification] setDescriptionFormat:[[self settings] objectForKey:@"descriptionString"]];
-
-
-	//configure the plugins
-	archivePlugin = nil;
-	plugins = [[self loadPlugins] retain];
-	NSLog(@"plugins: %@\n", plugins);
 }
 
 - (void)sendNotification:(id)sender
@@ -90,7 +85,7 @@
 {
 #pragma unused(sender)
 	NSDictionary *noteDict = [[self notification] dictionary];
-
+    NSLog(@"dictionary, %@", noteDict);
 	[GrowlApplicationBridge notifyWithDictionary:noteDict];
 }
 
@@ -110,19 +105,7 @@
 	NSData *result;
 	NSImage *artwork = nil;
 	
-	NSEnumerator *pluginEnum = [plugins objectEnumerator];
-	id <GrowlTunesPlugin> plugin;
-	while (!artwork && (plugin = [pluginEnum nextObject])) {
-		artwork = [plugin artworkForTitle:track
-								 byArtist:artist
-								  onAlbum:album
-							   composedBy:composer
-							isCompilation:compilation];
-		NSLog(@"plugin: %@ %@", plugin, artwork);
-		if (artwork && [plugin usesNetwork])
-			[archivePlugin archiveImage:artwork	track:track artist:artist album:album composer:composer compilation:compilation];
-	}	
-	//NSLog(@"plugin: %@ %@", plugin, artwork);
+
 	result = [artwork TIFFRepresentation];
 	return [result autorelease];
 }
@@ -144,7 +127,7 @@
 	NSImage			*iTunesIcon = [[NSWorkspace sharedWorkspace] iconForApplication:ITUNES_APP_NAME];
 	NSDictionary	*regDict = [NSDictionary dictionaryWithObjectsAndKeys:
 								APP_NAME,                        GROWL_APP_NAME,
-								[iTunesIcon TIFFRepresentation], GROWL_APP_ICON_DATA,
+								[iTunesIcon TIFFRepresentation], GROWL_APP_ICON,
 								allNotes,                        GROWL_NOTIFICATIONS_ALL,
 								allNotes,                        GROWL_NOTIFICATIONS_DEFAULT,
 								readableNames,					 GROWL_NOTIFICATIONS_HUMAN_READABLE_NAMES,
@@ -176,90 +159,6 @@
 {
 #pragma unused(newDescription)
 	
-}
-
-#pragma mark Plug-ins
-
-// This function is used to sort plugins, trying first the local ones, and then the network ones
-static int comparePlugins(id <GrowlTunesPlugin> plugin1, id <GrowlTunesPlugin> plugin2, void *context) {
-#pragma unused(context)
-	BOOL b1 = [plugin1 usesNetwork];
-	BOOL b2 = [plugin2 usesNetwork];
-	if (b2 && !b1) //b1 is local; b2 is network
-		return NSOrderedAscending;
-	else if (b1 && !b2) //b1 is network; b2 is local
-		return NSOrderedDescending;
-	else //both have the same behaviour
-		return NSOrderedAscending;
-}
-
-- (NSMutableArray *) loadPlugins {
-	NSMutableArray *newPlugins = [[NSMutableArray alloc] init];
-	NSMutableArray *lastPlugins = [[NSMutableArray alloc] init];
-	if (newPlugins) {
-		NSBundle *myBundle = [NSBundle bundleForClass:[self class]];
-		NSString *pluginsPath = [myBundle builtInPlugInsPath];
-		NSString *applicationSupportPath = [@"~/Library/Application Support/GrowlTunes/Plugins" stringByExpandingTildeInPath];
-		NSArray *loadPathsArray = [NSArray arrayWithObjects:pluginsPath, applicationSupportPath, nil];
-		NSEnumerator *loadPathsEnum = [loadPathsArray objectEnumerator];
-		NSString *loadPath;
-		NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-		static NSString *pluginPathExtension = @"plugin";
-		
-		while ((loadPath = [loadPathsEnum nextObject])) {
-			//NSLog(@"loadPath: %@\n", loadPath);
-			NSEnumerator *pluginEnum = [[[NSFileManager defaultManager] directoryContentsAtPath:loadPath] objectEnumerator];
-			NSString *curPath;
-			
-			while ((curPath = [pluginEnum nextObject])) {
-				//NSLog(@"currentPath: %@\n", curPath);
-				if ([[curPath pathExtension] isEqualToString:pluginPathExtension]) {
-					curPath = [pluginsPath stringByAppendingPathComponent:curPath];
-					NSBundle *plugin = [NSBundle bundleWithPath:curPath];
-					
-					if ([plugin load]) {
-						Class principalClass = [plugin principalClass];
-						
-						if ([principalClass conformsToProtocol:@protocol(GrowlTunesPlugin)]) {
-							id instance = [[principalClass alloc] init];
-							[newPlugins addObject:instance];
-							
-							if (!archivePlugin && ([principalClass conformsToProtocol:@protocol(GrowlTunesPluginArchive)])) {
-								archivePlugin = [instance retain];
-																//NSLog(@"plug-in %@ is archive-Plugin with id %p", [curPath lastPathComponent], instance);
-							}
-							[instance release];
-														//NSLog(@"Loaded plug-in \"%@\" with id %p", [curPath lastPathComponent], instance);
-						} else
-							NSLog(@"Loaded plug-in \"%@\" does not conform to protocol", [curPath lastPathComponent]);
-					} else
-						NSLog(@"Could not load plug-in \"%@\"", [curPath lastPathComponent]);
-				}
-			}
-		}
-		
-		[pool release];
-		[newPlugins addObjectsFromArray:lastPlugins];
-		[lastPlugins release];
-		[newPlugins autorelease];
-	}
-	
-	// sort the plugins, putting the one that uses network last
-	return (NSMutableArray *)[newPlugins sortedArrayUsingFunction:comparePlugins context:NULL];
-}
-
-@end
-
-@implementation NSObject(GrowlTunesDummyPlugin)
-
-- (NSImage *) artworkForTitle:(NSString *)track
-					 byArtist:(NSString *)artist
-					  onAlbum:(NSString *)album
-				isCompilation:(BOOL)compilation
-{
-#pragma unused(track,artist,album,compilation)
-	NSLog(@"Dummy plug-in %p called for artwork", self);
-	return nil;
 }
 
 @end
