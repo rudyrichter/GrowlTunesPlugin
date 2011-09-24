@@ -17,13 +17,27 @@
 
 - (void)setup
 {
-	NSString *privateFrameworksPath = [[NSBundle bundleForClass:[self class]] privateFrameworksPath];
+	NSLog(@"Setup Entered");
+    
+    NSString *privateFrameworksPath = [[NSBundle bundleForClass:[self class]] privateFrameworksPath];
 	NSString *ShortcutRecorderPath = [privateFrameworksPath stringByAppendingPathComponent:@"ShortcutRecorder.framework"];
 	NSString *GrowlPath = [privateFrameworksPath stringByAppendingPathComponent:@"Growl.framework"];
 	
 	[[NSBundle bundleWithPath:ShortcutRecorderPath] load];
-	[[NSBundle bundleWithPath:GrowlPath] load];
+	NSBundle *growlBundle = [NSBundle bundleWithPath:GrowlPath];
 	
+    if ([growlBundle load]) 
+    {
+        if ([NSClassFromString(@"GrowlApplicationBridge") respondsToSelector:@selector(frameworkInfoDictionary)]) {            
+            NSDictionary *infoDictionary = [NSClassFromString(@"GrowlApplicationBridge") frameworkInfoDictionary];
+            NSLog(@"Using Growl.framework %@ (%@)",
+                  [infoDictionary objectForKey:@"CFBundleShortVersionString"],
+                  [infoDictionary objectForKey:(NSString *)kCFBundleVersionKey]);
+        }
+    }
+    else
+        NSLog(@"Load failed");
+    
 	NSInteger keyCode = -1;
 	NSInteger modifiers = -1;
 	
@@ -88,7 +102,7 @@
     NSMutableDictionary *result = [[noteDict mutableCopy] autorelease];
     [result removeObjectForKey:GROWL_NOTIFICATION_ICON_DATA];
     NSLog(@"dictionary, %@", result);
-	[GrowlApplicationBridge notifyWithTitle:[noteDict objectForKey:GROWL_NOTIFICATION_TITLE]
+	[NSClassFromString(@"GrowlApplicationBridge") notifyWithTitle:[noteDict objectForKey:GROWL_NOTIFICATION_TITLE]
                                 description:[noteDict objectForKey:GROWL_NOTIFICATION_DESCRIPTION]
                            notificationName:[noteDict objectForKey:GROWL_NOTIFICATION_NAME]
                                    iconData:[noteDict objectForKey:GROWL_NOTIFICATION_ICON_DATA]
