@@ -7,7 +7,7 @@
 //
 
 #import <Cocoa/Cocoa.h>
-#import <Growl/GrowlApplicationBridge.h>
+#import <Growl/Growl.h>
 
 #import "GrowlAbstractSingletonObject.h"
 #import "GTPCommon.h"
@@ -33,7 +33,6 @@
 
 #pragma mark Plug-ins
 
-- (NSMutableArray *) loadPlugins;
 - (BOOL)appInBackground;
 - (void)sendNotification:(id)sender;
 - (NSData*)artworkForTitle:(NSString *)track byArtist:(NSString *)artist onAlbum:(NSString *)album composedBy:(NSString*)composer isCompilation:(BOOL)compilation;

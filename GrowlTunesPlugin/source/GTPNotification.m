@@ -131,25 +131,7 @@
 		[self setStreamTitle:nil];
 		[self setStreamURL:nil];
 		[self setStreamMessage:nil];
-	}
-
-	//Get cover art
-	Handle coverArt = NULL;
-	OSType format;
-	uint32_t err = noErr;
-	
-	/*err = PlayerGetCurrentTrackCoverArt(data->appCookie, data->appProc, &coverArt, &format);
-	if((err == noErr) && coverArt)
-		self.artwork = [NSData dataWithBytes:*coverArt length:GetHandleSize(coverArt)];
-	else
-		self.artwork = [(GTPController*)[GTPController sharedInstance] artworkForTitle:[self title] byArtist:[self artist] onAlbum:[self album] composedBy:[self composer] isCompilation:[self compilation]];
-	*/	 
-	if(!self.artwork)
-		self.artwork = [[[NSWorkspace sharedWorkspace] iconForApplication:@"iTunes"] TIFFRepresentation];
-		 
-	if (coverArt)
-		DisposeHandle(coverArt);
-		 
+	}		 
 }
 
 - (NSString*)replacements:(NSString*)string

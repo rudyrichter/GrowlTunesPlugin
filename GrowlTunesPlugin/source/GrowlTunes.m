@@ -21,7 +21,7 @@
 #define GROWLTUNES_EXPORT __attribute__((visibility("default")))
 #endif
 
-#define kTVisualPluginName              "\pGrowlTunes"
+#define kTVisualPluginName              CFSTR("GrowlTunes")
 #define	kTVisualPluginCreator           'GRWL'
 #define kBundleID						CFSTR("info.growl.growltunesplugin")
 
@@ -33,12 +33,18 @@
 
 #define GTP CFSTR("info.growl.growltunes")
 
+void GetVisualName( ITUniStr255 name );
 
 /**\
 |**|	exported function prototypes
 \**/
 
 extern OSStatus iTunesPluginMainMachO(OSType message, PluginMessageInfo *messageInfo, void *refCon);
+
+static void RequestArtwork( VisualPluginData * visualPluginData )
+{
+    OSStatus status = PlayerRequestCurrentTrackCoverArt( visualPluginData->appCookie, visualPluginData->appProc );
+}
 
 /*
 	Name: VisualPluginHandler
@@ -123,7 +129,9 @@ static OSStatus VisualPluginHandler(OSType message, VisualPluginMessageInfo *mes
 		case kVisualPluginPlayMessage: 
 		case kVisualPluginChangeTrackMessage:
 		{
-			if (messageInfo->u.playMessage.trackInfo)
+            
+            visualPluginData->playing = true;
+            if (messageInfo->u.playMessage.trackInfo)
 				visualPluginData->trackInfo = *messageInfo->u.playMessage.trackInfo;
 			else
 				memset(&visualPluginData->trackInfo, 0, sizeof(visualPluginData->trackInfo));
@@ -132,28 +140,42 @@ static OSStatus VisualPluginHandler(OSType message, VisualPluginMessageInfo *mes
 				visualPluginData->streamInfo = *messageInfo->u.playMessage.streamInfo;
 			else
 				memset(&visualPluginData->streamInfo, 0, sizeof(visualPluginData->streamInfo));
-
-									 
+            
+            
 			GTPNotification *notification = [[GTPController sharedInstance] notification];
 			[notification setVisualPluginData:visualPluginData];
 			[notification setState:(message == kVisualPluginPlayMessage)];
-		
-			[[GTPController sharedInstance] sendNotification:nil];
-
-			visualPluginData->playing = true;
+            
+            RequestArtwork( visualPluginData );
 			break;
 		}
-
+            
 		/*
 			Sent when the player changes the current track information.  This
 			is used when the information about a track changes,or when the CD
 			moves onto the next track.  The visual plugin should update any displayed
 			information about the currently playing song.
 		*/
-		//case kVisualPluginChangeTrackMessage:
-		//{
-		//	break;
-		//}
+		case kVisualPluginCoverArtMessage:
+		{
+            //Get cover art
+            GTPNotification *notification = [[GTPController sharedInstance] notification];
+            CFDataRef coverArt = messageInfo->u.coverArtMessage.coverArt;
+            OSType format = messageInfo->u.coverArtMessage.coverArtFormat;
+            
+            if(coverArt)
+            {
+                NSImage *imageArt = [[[NSImage alloc] initWithData:(NSData*)coverArt] autorelease];
+                notification.artwork = [imageArt TIFFRepresentation];
+            }
+            
+            if(!notification.artwork)
+                notification.artwork = [[[NSWorkspace sharedWorkspace] iconForApplication:@"iTunes"] TIFFRepresentation];
+            
+			[[GTPController sharedInstance] sendNotification:nil];
+
+            break;
+		}
 
 		/*
 			Sent when the player stops.
@@ -176,6 +198,14 @@ static OSStatus VisualPluginHandler(OSType message, VisualPluginMessageInfo *mes
 	return err;
 }
 
+void GetVisualName( ITUniStr255 name )
+{
+	CFIndex length = CFStringGetLength( kTVisualPluginName );
+    
+	name[0] = (UniChar)length;
+	CFStringGetCharacters( kTVisualPluginName, CFRangeMake( 0, length ), &name[1] );
+}
+
 /*
 	Name: RegisterVisualPlugin
 	Function: registers GrowlTunes with the iTunes plugin api
@@ -186,7 +216,7 @@ static OSStatus RegisterVisualPlugin(PluginMessageInfo *messageInfo)
 
 	memset(&playerMessageInfo.u.registerVisualPluginMessage, 0, sizeof(playerMessageInfo.u.registerVisualPluginMessage));
 
-	memcpy(playerMessageInfo.u.registerVisualPluginMessage.name, kTVisualPluginName, kTVisualPluginName[0] + 1);
+	GetVisualName( playerMessageInfo.u.registerVisualPluginMessage.name );
 
 	SetNumVersion(&playerMessageInfo.u.registerVisualPluginMessage.pluginVersion, kTVisualPluginMajorVersion, kTVisualPluginMinorVersion, kTVisualPluginReleaseStage, kTVisualPluginNonFinalRelease);
 

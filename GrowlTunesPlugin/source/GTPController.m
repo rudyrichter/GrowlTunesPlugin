@@ -7,7 +7,7 @@
 //
 
 #import "GTPController.h"
-#import <Growl/GrowlDefines.h>
+#import <Growl/Growl.h>
 
 @implementation GTPController
 
@@ -85,8 +85,18 @@
 {
 #pragma unused(sender)
 	NSDictionary *noteDict = [[self notification] dictionary];
-    NSLog(@"dictionary, %@", noteDict);
-	[GrowlApplicationBridge notifyWithDictionary:noteDict];
+    NSMutableDictionary *result = [[noteDict mutableCopy] autorelease];
+    [result removeObjectForKey:GROWL_NOTIFICATION_ICON_DATA];
+    NSLog(@"dictionary, %@", result);
+	[GrowlApplicationBridge notifyWithTitle:[noteDict objectForKey:GROWL_NOTIFICATION_TITLE]
+                                description:[noteDict objectForKey:GROWL_NOTIFICATION_DESCRIPTION]
+                           notificationName:[noteDict objectForKey:GROWL_NOTIFICATION_NAME]
+                                   iconData:[noteDict objectForKey:GROWL_NOTIFICATION_ICON_DATA]
+                                   priority:0
+                                   isSticky:0
+                               clickContext:nil
+                                 identifier:[noteDict objectForKey:GROWL_NOTIFICATION_IDENTIFIER]];
+    //[GrowlApplicationBridge notifyWithDictionary:noteDict];
 }
 
 - (void)showSettingsWindow
@@ -127,7 +137,7 @@
 	NSImage			*iTunesIcon = [[NSWorkspace sharedWorkspace] iconForApplication:ITUNES_APP_NAME];
 	NSDictionary	*regDict = [NSDictionary dictionaryWithObjectsAndKeys:
 								APP_NAME,                        GROWL_APP_NAME,
-								[iTunesIcon TIFFRepresentation], GROWL_APP_ICON,
+								[iTunesIcon TIFFRepresentation], GROWL_APP_ICON_DATA,
 								allNotes,                        GROWL_NOTIFICATIONS_ALL,
 								allNotes,                        GROWL_NOTIFICATIONS_DEFAULT,
 								readableNames,					 GROWL_NOTIFICATIONS_HUMAN_READABLE_NAMES,
